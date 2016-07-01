@@ -41,8 +41,6 @@ public static class MeasureSpec {
 
     public static final int EXACTLY = 1 << MODE_SHIFT;
 
-    public static final int AT_MOST = 2 << MODE_SHIFT;
-
     public static int makeMeasureSpec(int size, int mode) {
         if (sUseBrokenMakeMeasureSpec) {
             return size + mode;
@@ -100,6 +98,6 @@ public static int resolveSizeAndState(int size, int measureSpec, int childMeasur
     return result | (childMeasuredState & MEASURED_STATE_MASK);
 }
 ```
-  到此我们就会发现，android是将模式和控件大小放到一个32位的数中，前两位代表的模式，后30位是大小。
+  到此我们就会发现，android是将模式和控件大小放到一个32位的二进制数中，前两位代表的模式，后30位是大小。
   4、makeMeasureSpec、getMode、getSize
   生成测测信息、获取模式和获取大小，这三个方法就是一堆与或运算，这里没什么好讲的。
