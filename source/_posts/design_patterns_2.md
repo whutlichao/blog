@@ -208,7 +208,7 @@ public class ProtoType implements Cloneable{
    由此可见深复制的性能比浅复制更加的耗时，但两种复制方式应对不同的场景，所以我们需要精准的确认到底使用哪种复制方式，否则会对带来性能问题。
  ``` java
  public class ProtoType implements Cloneable, Serializable{
-   
+
 	private static final long serialVersionUID = 1L;
 
 	public Object clone()
@@ -235,3 +235,100 @@ public class ProtoType implements Cloneable{
 }
 ```
 ## 单例模式（Singleton）
+   单例模式在java中使用非常频繁，它有什么好处呢：当某个类比较庞大时，单例模式可以避免多次实例化导致不必要的开销；某些特殊的类不能被多次实例化，否则会引起业务逻辑错误。但是单例模式也不能随便乱用，否则轻则线程阻塞、性能有损，重则业务逻辑错误。在使用单例模式时我们不得不考虑的一个重要问题就是线程安全，因为只有一个实例，所以在处理多线程并发时要做线程同步或加锁。
+### 简单单例模式
+   单例模式需要三个重要元素，1、private的对象实例。2、私有的构造方法，防止其它地方使用默认的公共构造方法实例化对象。3、公共静态的获取实例的入口。先来看一个例子：
+``` java
+public class Singleton {
+
+	private static Singleton instance = null;
+
+	private Singleton()
+	{
+
+	}
+
+	public static Singleton getInstance()
+	{
+		if (instance == null)
+		{
+			instance = new Singleton();
+		}
+
+		return instance;
+	}
+}
+```
+### 线程安全的单例模式
+   但是大家会发现一个问题，当这个类被放到多线程环境下时，就会出现问题，因为毫无线程安全的保护，所以可以改进如下：
+``` java
+public static synchronized Singleton getInstance()
+{
+  if (instance == null)
+  {
+    instance = new Singleton();
+  }
+
+  return instance;
+}
+```
+   但是问题又来了，这样直接在方法上加同步关键字，支将整个对象都锁住的，多线程并发性能会大大降低，因为每次调用获取对象实例时都会给对象加锁。我们再改进一下，只在第一次创建对象时对对象加锁。
+``` java
+public static Singleton getInstance()
+{
+  if (instance == null)
+  {
+    synchronized(instance)
+    {
+      if (instance == null)
+      {
+        instance = new Singleton();
+      }
+    }
+  }
+  return instance;
+}
+```
+   但是问题又来了（好烦啊，问题真多），在java中创建对象和赋值操作是分两步进行的，但是这两个步骤的先后顺序是无法判断的，也就是说有可能先给instance分配好了空白内存空间再生成对象，或者先生成了对象再将这内存分配给instance。当两上线程同时进入了第一个instance==null的判断时，若A线程先给instance分配了内存空间后放开了instance的锁，但是还没有做创建对象的操作，B线程发现instance不为空（只是有指向的空白内存而已），如果这时候B线程要使用insance时会发现instance没有被实例化。我们再做如下的优化。
+``` java
+public class Singleton {
+	private Singleton()
+	{
+	}
+	private static class SingletonFactory
+	{
+		private static Singleton instance = new Singleton();
+	}
+
+	public static Singleton getInstance()
+	{
+		return SingletonFactory.instance;
+	}
+}
+```
+   我们使用一个静态内部类来维护这个对象，为什么这样做可以线程安全呢，因为JVM会提前加载静态变量，而JVM加载类的时候是线程互斥的，所以 我们利用了JVM的这样一个机制从而保证线程的安全和性能的要求。
+   还有一种方法是将获取和创建过程分离，单独为创建加锁，这样也可以实现安全的单例模式，同时不会降低性能。
+``` java
+public class Singleton {
+	private static Singleton instance = null;
+	private Singleton()
+	{
+	}
+
+	public static Singleton getInstance()
+	{
+		if (instance == null)
+		{
+			SyncInit();
+		}
+		return instance;
+	}
+
+	private static synchronized void SyncInit() {
+		if (instance == null)
+		{
+			instance = new Singleton();
+		}
+	}
+}   
+```
