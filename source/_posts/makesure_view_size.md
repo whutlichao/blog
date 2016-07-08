@@ -41,6 +41,8 @@ public static class MeasureSpec {
 
     public static final int EXACTLY = 1 << MODE_SHIFT;
 
+	public static final int AT_MOST = 2 << MODE_SHIFT;
+
     public static int makeMeasureSpec(int size, int mode) {
         if (sUseBrokenMakeMeasureSpec) {
             return size + mode;
